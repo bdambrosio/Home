@@ -60,7 +60,7 @@ layout = [  [sg.Text(Time, key='-time-')],
 ]
 
 # Create the Window
-window = sg.Window('PV Monitor', layout, no_titlebar=True)
+window = sg.Window('PV Monitor', layout, no_titlebar=False)
 
 def new_measurement(client, userdata, msg):
     #print (msg.topic, msg.payload)
@@ -149,23 +149,25 @@ def new_measurement(client, userdata, msg):
     else:
                 print('unknown: ', topic)
             
+def subscribe(client):
+    client.subscribe('pv/battery/output/voltage')
+    client.subscribe("pv/battery/output/current")
+    client.subscribe('pv/battery/input/voltage')
+    client.subscribe("pv/battery/input/current")
+    
+    client.subscribe('home/#')
+    
+    client.subscribe('tele/sds011/#')
+    
+    client.subscribe('stat/SP101/#')
+    client.subscribe('stat/SP102/#')
+    client.subscribe('stat/SP103/#')
+    client.subscribe('stat/SP104/#')
     
 # start mqtt client
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
-        client.subscribe('pv/battery/output/voltage')
-        client.subscribe("pv/battery/output/current")
-        client.subscribe('pv/battery/input/voltage')
-        client.subscribe("pv/battery/input/current")
-        
-        client.subscribe('home/#')
-
-        client.subscribe('tele/sds011/#')
-
-        client.subscribe('stat/SP101/#')
-        client.subscribe('stat/SP102/#')
-        client.subscribe('stat/SP103/#')
-        client.subscribe('stat/SP104/#')
+        subscribe(client)
         #window['-msg-'].update("MQTT connected")
         print("MQTT connect success")
     else:
@@ -174,16 +176,7 @@ def on_connect(client, userdata, flags, rc):
 def on_disconnect(client, userdata, rc):
     #window['-msg-'].update("MQTT connection lost")
     client.reconnect()
-
-#client.subscribe('pv/battery/output/voltage')
-#client.subscribe("pv/battery/output/current")
-#client.subscribe('pv/battery/input/voltage')
-#client.subscribe("pv/battery/input/current")
-
-#client.subscribe('stat/SP101/#')
-#client.subscribe('stat/SP102/#')
-#client.subscribe('stat/SP103/#')
-#client.subscribe('stat/SP104/#')
+    subscribe(client)
 
 def PSGEvents():
     while True:
@@ -199,12 +192,14 @@ def PSGEvents():
 
 def MQTT_Msgs():
     while True:
-        client.loop()
-        time.sleep(.1)
-        
+        try:
+            client.loop_forever()
+        except BaseException as e:
+            print ("exception ", e)
+            
 t1 = threading.Thread(target=PSGEvents)
 t1.start()
-time.sleep(.1) # allow window to be created
+time.sleep(2) # allow window to be created
         
 print("New MQT session being set up")
 client = mqtt.Client() 
