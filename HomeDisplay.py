@@ -21,6 +21,9 @@ S3_temp = ' 00.0'
 S3_hum = ' 00.0'
 S3_atmp = ' 0000.0'
 
+S4_temp = ' 00.0'
+S4_hum = ' 00.0'
+
 PM25 = ' 000.0'
 PM10 = ' 000.0'
 Msg = '                '
@@ -48,15 +51,16 @@ layout = [  [sg.Text(Time, key='-time-')],
              sg.Text(' H:'), sg.Text(S3_hum, key='-S3_hum-'),
              sg.Text(' P:'), sg.Text(S3_atmp, key='-S3_atmp-')],
 
+            [sg.Text('S4 T:'), sg.Text(S4_temp, key='-S4_temp-'),
+             sg.Text(' H:'), sg.Text(S4_hum, key='-S4_hum-')],
+
             [sg.Text('PM2.5:'), sg.Text(PM25, key='-PM25-'),
              sg.Text('    PM10:'), sg.Text(PM10, key='-PM10-')],
 
             [sg.Button('0', key='SW0'), sg.Text('    '),
              sg.Button('1', key='SW1'), sg.Text('    '),
              sg.Button('2', key='SW2'), sg.Text('    '),
-             sg.Button('3', key='SW3')],
-            
-            [sg.Text(Msg, key='-msg-')]
+             sg.Button('3', key='SW3')]
 ]
 
 # Create the Window
@@ -123,6 +127,15 @@ def new_measurement(client, userdata, msg):
                 S3_atmp = " {0:5.1f}".format(value)
                 window['-S3_atmp-'].update(S3_atmp)
             
+        if tags[1] == 'sensor4':
+            if measure == 'tmp':
+                S4_temp = " {0:5.2f}".format(value*9/5+32)
+                window['-S4_temp-'].update(S4_temp)
+            elif measure == 'hum':
+                S4_hum = " {0:5.1f}".format(value)
+                window['-S4_hum-'].update(S4_hum)
+
+
     elif topic == 'tele/sds011/SENSOR':
         try:
             measurement = json.loads(msg.payload)
