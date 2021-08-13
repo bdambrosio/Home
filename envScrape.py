@@ -77,6 +77,8 @@ def new_measurement(client, userdata, msg):
                     json_measurement['tags']['sys'] = tags[0]
                     json_measurement['tags']['subsys'] = tags[1]
                     db.write_points(json_measurements)
+                    intvl_total[topic] = 0.0
+                    intvl_count[topic] = 0
                 except BaseError as e:
                     print("errror in db write", e)
 
@@ -106,10 +108,9 @@ def new_measurement(client, userdata, msg):
                 json_measurement['fields']['value'] = intvl_total[topic10]/intvl_count[topic]
                 json_measurement['tags']['subsys2'] = 'PM10'
                 db.write_points(json_measurements)
+                intvl_total[topic25] = 0.0
                 intvl_total[topic10] = 0.0
-                intvl_count[topic10] = 0
-                intvl_total[topic10] = 0.0
-                intvl_count[topic10] = 0
+                intvl_count[topic] = 0
         
     except OSError as e:
         print ("exception caught", e)
