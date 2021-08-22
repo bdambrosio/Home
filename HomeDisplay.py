@@ -57,10 +57,10 @@ layout = [  [sg.Text(Time, key='-time-')],
             [sg.Text('PM2.5:'), sg.Text(PM25, key='-PM25-'),
              sg.Text('    PM10:'), sg.Text(PM10, key='-PM10-')],
 
-            [sg.Button('0', key='SW0'), sg.Text('    '),
-             sg.Button('1', key='SW1'), sg.Text('    '),
-             sg.Button('2', key='SW2'), sg.Text('    '),
-             sg.Button('3', key='SW3')]
+            [sg.Button('0', key='-SP100-'), sg.Text('    '),
+             sg.Button('1', key='-SP101-'), sg.Text('    '),
+             sg.Button('2', key='-SP102-'), sg.Text('    '),
+             sg.Button('3', key='-SP103-')]
 ]
 
 # Create the Window
@@ -148,17 +148,20 @@ def new_measurement(client, userdata, msg):
         PM10 = " {0:6.1f}".format(pm10_val)
         window['-PM10-'].update(PM10)
 
-    elif 'SP10' in topic:
-        id = int(topic[9])
-        print(topic, id)
-        if 'RESULT' in topic:
-            window['-msg-'].update(topic)
+    elif 'stat/SP10' in topic:
+        start = topic.index("SP10")
+        id = topic[start:start+5]
+        #print(topic, id, msg.payload)
+        if 'POWER' in topic:
             try:
-                change = json.loads(msg.payload)
+                status = msg.payload
+                if status == b'ON':
+                    window['-'+id+'-'].update(button_color=('black', 'green'))
+                elif status == b'OFF':
+                    window['-'+id+'-'].update(button_color=('white', 'grey'))
             except:
+                print("failure reading/setting button status")
                 return
-            if change is dict:
-                print(change.keys())
     else:
                 print('unknown: ', topic)
             
@@ -204,15 +207,21 @@ def PSGEvents():
     window.close()
 
 def MQTT_Msgs():
+    time.sleep(1)
+    client.loop_start()
+    time.sleep(1)
     while True:
         try:
-            client.loop_forever()
+            client.publish('cmnd/SP101/Power')
+            client.publish('cmnd/SP102/Power')
+            client.publish('cmnd/SP103/Power')
         except BaseException as e:
-            print ("exception ", e)
+            print ("exception asking for SP10x Power status", e)
+        time.sleep(600) # query every 10 min
             
 t1 = threading.Thread(target=PSGEvents)
 t1.start()
-time.sleep(2) # allow window to be created
+time.sleep(4) # allow window to be created
         
 print("New MQT session being set up")
 client = mqtt.Client() 
@@ -220,7 +229,7 @@ client.on_connect = on_connect
 client.on_disconnect = on_disconnect
 client.on_message = new_measurement
 client.username_pw_set(username='mosq', password='1947nw')
-client.connect("192.168.1.117", 1883, 60)
+client.connect("192.168.1.101", 1883, 60)
 t2 = threading.Thread(target=MQTT_Msgs)
 t2.start()
 
