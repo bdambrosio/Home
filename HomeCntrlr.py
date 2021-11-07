@@ -34,37 +34,24 @@ Time = str(now.astimezone(ptz))[:-13]
 
 import PySimpleGUI as sg
 sg.theme('DarkAmber')   # Add a little color to your windows
-sg.set_options(font=('Helvetica', 14))
+sg.set_options(font=('Helvetica', 24))
 # 
-layout = [  [sg.Text(Time, key='-time-')],
-            [sg.Text('PvB Vi/o:'), sg.Text(PVB_Vin, key='-PVB_Vin-'),
-            sg.Text('/'), sg.Text(PVB_Vout, key='-PVB_Vout-'),
-             sg.Text('  Ii/o:'), sg.Text(PVB_Iin, key='-PVB_Iin-'),
-             sg.Text('/'), sg.Text(PVB_Iout, key='-PVB_Iout-')],
+layout = [  [sg.Text('    '), sg.Text(Time, key='-time-')],
 
-            [sg.Text('S2 T:'), sg.Text(S2_temp, key='-S2_temp-'),
-             sg.Text(' H:'), sg.Text(S2_hum, key='-S2_hum-'),
-             sg.Text(' P:'), sg.Text(S2_atmp, key='-S2_atmp-'),
-             sg.Text(' V:'), sg.Text(S2_vols, key='-S2_vols-')],
+            [sg.Text('     T:'), sg.Text(S4_temp, key='-S4_temp-'),
+             sg.Text('     H:'), sg.Text(S4_hum, key='-S4_hum-')],
 
-            [sg.Text('S3 T:'), sg.Text(S3_temp, key='-S3_temp-'),
-             sg.Text(' H:'), sg.Text(S3_hum, key='-S3_hum-'),
-             sg.Text(' P:'), sg.Text(S3_atmp, key='-S3_atmp-')],
+            [sg.Text('     PM2.5:'), sg.Text(PM25, key='-PM25-'),
+             sg.Text(' PM10:'), sg.Text(PM10, key='-PM10-')],
 
-            [sg.Text('S4 T:'), sg.Text(S4_temp, key='-S4_temp-'),
-             sg.Text(' H:'), sg.Text(S4_hum, key='-S4_hum-')],
-
-            [sg.Text('PM2.5:'), sg.Text(PM25, key='-PM25-'),
-             sg.Text('    PM10:'), sg.Text(PM10, key='-PM10-')],
-
-            [sg.Button('0', key='-SP100-'), sg.Text('    '),
-             sg.Button('1', key='-SP101-'), sg.Text('    '),
-             sg.Button('2', key='-SP102-'), sg.Text('    '),
-             sg.Button('3', key='-SP103-')]
+            [sg.Text('      '), sg.Button('PvChrg', key='-SP101-'),
+             sg.Text('      '), sg.Button(' Porch ', key='-SP102-'), sg.Text('    ')],
+            [sg.Text('      '), sg.Button('    Htr   ', key='-SP103-'),
+             sg.Text('      '), sg.Button(' Spare ', key='-SP103-')]
 ]
 
 # Create the Window
-window = sg.Window('PV Monitor', layout, no_titlebar=False)
+window = sg.Window('Home', layout, no_titlebar=True)
 
 def new_measurement(client, userdata, msg):
     #print (msg.topic, msg.payload)
@@ -72,6 +59,7 @@ def new_measurement(client, userdata, msg):
     Time = str(now.astimezone(ptz))[:-13]
     topic = msg.topic
 
+    """
     if 'pv/battery' in topic:
         try:
             measurement = json.loads(msg.payload)
@@ -94,7 +82,8 @@ def new_measurement(client, userdata, msg):
             else:
                 PVB_Vin = " {0:5.2f}".format(measurement)
                 window['-PVB_Vin-'].update(PVB_Vin)
-    elif 'home' in topic:
+    """
+    if 'home' in topic:
         tags = topic.split('/')
         measure = tags[2]
         try:
@@ -102,6 +91,7 @@ def new_measurement(client, userdata, msg):
         except:
             return
         value = measurement['value']
+        """
         if tags[1] == 'sensor2':
             if measure == 'tmp':
                 S2_temp = " {0:5.2f}".format(value*9/5+32)
@@ -127,7 +117,8 @@ def new_measurement(client, userdata, msg):
                 S3_atmp = " {0:5.1f}".format(value)
                 window['-S3_atmp-'].update(S3_atmp)
             
-        if tags[1] == 'sensor4':
+        """
+        if (tags[1] == 'sensor4') or (tags[1] == 'sensor6'):
             if measure == 'tmp':
                 S4_temp = " {0:5.2f}".format(value*9/5+32)
                 window['-S4_temp-'].update(S4_temp)
@@ -166,10 +157,10 @@ def new_measurement(client, userdata, msg):
                 print('unknown: ', topic)
             
 def subscribe(client):
-    client.subscribe('pv/battery/output/voltage')
-    client.subscribe("pv/battery/output/current")
-    client.subscribe('pv/battery/input/voltage')
-    client.subscribe("pv/battery/input/current")
+    #client.subscribe('pv/battery/output/voltage')
+    #client.subscribe("pv/battery/output/current")
+    #client.subscribe('pv/battery/input/voltage')
+    #client.subscribe("pv/battery/input/current")
     
     client.subscribe('home/#')
     
@@ -205,11 +196,13 @@ def PSGEvents():
         event, values = window.read()
         if event in (sg.WIN_CLOSED, 'Cancel'):
             break
-        if 'SW' in event:
-            btn_id=int(event[2])
-            print(event)
-            if btn_id >= 0 and btn_id < 4:
-                client.publish('cmnd/SP10'+str(btn_id)+'/POWER', 'OFF')
+        print(event)
+        if '-SP10' in event:
+            btn_id=int(event[5])
+            print("SW", event)
+            if btn_id > 0 and btn_id <= 4:
+                print('cmnd/SP10'+str(btn_id)+'/POWER', 'TOGGLE')
+                client.publish('cmnd/SP10'+str(btn_id)+'/POWER', 'TOGGLE')
     window.close()
 
 def MQTT_Msgs():
@@ -221,6 +214,7 @@ def MQTT_Msgs():
             client.publish('cmnd/SP101/Power')
             client.publish('cmnd/SP102/Power')
             client.publish('cmnd/SP103/Power')
+            client.publish('cmnd/SP104/Power')
         except BaseException as e:
             print ("exception asking for SP10x Power status", e)
         time.sleep(600) # query every 10 min
