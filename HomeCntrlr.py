@@ -47,7 +47,7 @@ layout = [  [sg.Text('    '), sg.Text(Time, key='-time-')],
             [sg.Text('      '), sg.Button('PvChrg', key='-SP101-'),
              sg.Text('      '), sg.Button(' Porch ', key='-SP102-'), sg.Text('    ')],
             [sg.Text('      '), sg.Button('    Htr   ', key='-SP103-'),
-             sg.Text('      '), sg.Button(' Spare ', key='-SP103-')]
+             sg.Text('      '), sg.Button('Bdm Htr', key='-SP104-')]
 ]
 
 # Create the Window

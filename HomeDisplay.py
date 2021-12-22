@@ -221,6 +221,7 @@ def MQTT_Msgs():
             client.publish('cmnd/SP101/Power')
             client.publish('cmnd/SP102/Power')
             client.publish('cmnd/SP103/Power')
+            client.publish('cmnd/SP104/Power')
         except BaseException as e:
             print ("exception asking for SP10x Power status", e)
         time.sleep(600) # query every 10 min
